@@ -102,7 +102,7 @@ module Solve_TF
 
     function make_element_matrix_and_vector(solve_tf_param, solve_tf_val, yarray)
         beta_array = make_beta(solve_tf_val, yarray)
-        yitp = interpolate((solve_tf_val.node_x_glo,), beta_array, Gridded(Constant()))
+        yitp = interpolate((solve_tf_val.node_x_glo,), beta_array, Gridded(Linear()))
 
         # 要素行列とLocal節点ベクトルの各成分を計算
         for e = 1:solve_tf_param.ELE_TOTAL
