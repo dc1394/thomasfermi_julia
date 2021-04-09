@@ -2,7 +2,6 @@ module Readinputfile
     include("data_module.jl")
     include("readinputfile_module.jl")
     using Base.Unicode
-    using Match
     using Printf
     using .Readinputfile_module
 
@@ -201,7 +200,7 @@ module Readinputfile
         rif_val.data.xmax = readvalue!(Data_module.XMAX_DEFAULT, rif_val, "grid.xmax")
  
         # グリッドのサイズを読み込む
-        rif_val.data.grid_num = readvalue!(Data_module.GRID_NUM_DEFAULT, rif_val, "grid.num") + 1
+        rif_val.data.grid_num = readvalue!(Data_module.GRID_NUM_DEFAULT, rif_val, "grid.num")
  
         # 許容誤差を読み込む
         rif_val.data.eps = readvalue!(Data_module.EPS_DEFAULT, rif_val, "eps")

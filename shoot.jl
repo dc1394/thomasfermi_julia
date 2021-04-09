@@ -5,21 +5,23 @@ module Shoot
     include("shoot_module.jl")
     using DifferentialEquations
     using LinearAlgebra
+    using MKL
     using .Load2
     using .Shoot_module
     using Printf
 
     const DELV = 1.0E-7
     const NVAR = 2
-    const vmin = -1.588076779
+    const VMIN = -1.588076779
 
-    function construct(dx, eps, xmax, data)
+    function construct(dx, data)
         load2_param, load2_val = Load2.construct()
         shoot_val = Shoot_module.Shoot_module_variables(
             dx,
-            eps,
-            vmin,
-            Load2.make_v2(xmax, load2_param, load2_val),
+            data.eps,
+            data.grid_num,
+            VMIN,
+            Load2.make_vmax(data.xmax, load2_param, load2_val),
             data.xmin,
             data.matching_point,
             data.xmax,
@@ -29,25 +31,22 @@ module Shoot
         return shoot_val
     end
 
-    createresult(res1, res2, xarray1, xarray2) = let
-        xarray = append!(xarray1, xarray2[2:end])
+    createresult(res1, res2, xarray1, xarray2, shoot_val) = let
+        xarray = append!(xarray1[2:end], xarray2[2:end])
         res1[end] = (res1[end] + res2[1]) / 2.0
-        yarray = append!(res1, res2[2:end])
-        open( "a.txt", "w" ) do fp
-            for i = 1:length(xarray)
-                write( fp, @sprintf("%.14f %.14f\n", xarray[i], yarray[i]))
-            end
-        end
-        exit(0)
-        return xarray, yarray
+        yarray = append!(res1[2:end], res2[2:end])
+
+        xar = [0.0]
+        yar = [1.0]
+        return append!(xar, xarray), append!(yar, yarray)
     end
 
-    function funcx1(dfdv, f1, xmin, xf, f_vector, shoot_val)
+    function funcx1(dfdv, f1, f_vector, shoot_val)
         sav = shoot_val.vmin
         shoot_val.vmin += DELV
 
         u0 = load1(shoot_val.xmin, shoot_val.vmin)
-        tspan = (shoot_val.xmin, xf)
+        tspan = (shoot_val.xmin, shoot_val.xf)
         prob = ODEProblem(f_vector, u0, tspan)
         sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps)
         f = sol.u[end]
@@ -61,12 +60,12 @@ module Shoot
         shoot_val.vmin = sav
     end
 
-    function funcx2(dfdv, f2, xmax, xf, f_vector, shoot_val)
+    function funcx2(dfdv, f2, f_vector, shoot_val)
         sav = shoot_val.vmax
         shoot_val.vmax += DELV
 
-        u0 = Load2.load2(xmax, shoot_val.vmax, shoot_val.load2_param, shoot_val.load2_val)
-        tspan = (xmax, xf)
+        u0 = Load2.load2(shoot_val.xmax, shoot_val.vmax, shoot_val.load2_param, shoot_val.load2_val)
+        tspan = (shoot_val.xmax, shoot_val.xf)
         prob = ODEProblem(f_vector, u0, tspan)
         sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps)
         f = sol.u[end]
@@ -93,15 +92,15 @@ module Shoot
         f_vector(u, p, t) = [u[2], u[1] * sqrt(u[1] / t)]
 
         # 最良の仮の値v1_でx1からxfまで解いていく
-        u0 = load1(shoot_val.xmin, vmin)
-        tspan = (shoot_val.xmin, xf)
+        u0 = load1(shoot_val.xmin, shoot_val.vmin)
+        tspan = (shoot_val.xmin, shoot_val.xf)
         prob = ODEProblem(f_vector, u0, tspan)
         sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps)
         f1 = sol.u[end]
         
         # 最良の仮の値v2_でx2からxfまで解いていく
-        u0 = Load2.load2(xmax, shoot_val.vmax, shoot_val.load2_param, shoot_val.load2_val)
-        tspan = (xmax, xf)
+        u0 = Load2.load2(shoot_val.xmax, shoot_val.vmax, shoot_val.load2_param, shoot_val.load2_val)
+        tspan = (shoot_val.xmax, shoot_val.xf)
         prob = ODEProblem(f_vector, u0, tspan)
         sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps)
         f2 = sol.u[end]
@@ -109,10 +108,10 @@ module Shoot
         dfdv = Matrix{Float64}(undef, NVAR, NVAR)
 
         # x1で用いる境界条件を変える
-        funcx1(dfdv, f1, shoot_val.xmin, xf, f_vector, shoot_val)
+        funcx1(dfdv, f1, f_vector, shoot_val)
 
         # 次にx2で用いる境界条件を変える
-        funcx2(dfdv, f2, xmax, xf, f_vector, shoot_val)
+        funcx2(dfdv, f2, f_vector, shoot_val)
 
         f = f1 .- f2
         ff = -1.0 .* f
@@ -123,14 +122,26 @@ module Shoot
 
         shoot_val.vmax += solf[2]                 # x2の境界でのパラメータ値の増分
 
-        res1, xarray1 = solveodex1toxfpx1(shoot_val.xmin, xf, f_vector, shoot_val)
+        res1, xarray1 = solveode_xmintoxf(f_vector, shoot_val)
 
-        res2, xarray2 = solveodex2toxfmx1(xmax, xf, f_vector, shoot_val)
+        res2, xarray2 = solveode_xmaxtoxf(f_vector, shoot_val)
 
-        return createresult(res1, res2, xarray1, xarray2)
+        return createresult(res1, res2, xarray1, xarray2, shoot_val)
     end
 
-    solveodex1toxfpx1(xmin, xf, f_vector, shoot_val) = let
+    solveode_xmaxtoxf(f_vector, shoot_val) = let
+        # 得られた条件でx2...xfまで微分方程式を解く
+        u0 = Load2.load2(shoot_val.xmax, shoot_val.vmax, shoot_val.load2_param, shoot_val.load2_val)
+        tspan = (shoot_val.xmax, shoot_val.xf)
+        prob = ODEProblem(f_vector, u0, tspan)
+        sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps, saveat = shoot_val.dx)
+        a = vcat(sol.u...)
+        res = deleteat!(a, 2:2:length(a))   # shoot_val.xmax...xfの結果を得る
+
+        return reverse(res), reverse(sol.t)
+    end
+
+    solveode_xmintoxf(f_vector, shoot_val) = let
         # 得られた条件でx1...dxまで微分方程式を解く
         u0 = load1(shoot_val.xmin, shoot_val.vmin)
         tspan = (shoot_val.xmin, shoot_val.dx)
@@ -141,7 +152,7 @@ module Shoot
 
         # 得られた条件でdx...xfまで微分方程式を解く
         u0 = y
-        tspan = (shoot_val.dx, xf)
+        tspan = (shoot_val.dx, shoot_val.xf)
         prob = ODEProblem(f_vector, u0, tspan)
         sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps, saveat = shoot_val.dx)
         a = vcat(sol.u...)
@@ -152,17 +163,5 @@ module Shoot
         tarray = append!(tarray, sol.t)
 
         return res, tarray
-    end
-
-    solveodex2toxfmx1(xmax, xf, f_vector, shoot_val) = let
-        # 得られた条件でx2...xfまで微分方程式を解く
-        u0 = Load2.load2(xmax, shoot_val.vmax, shoot_val.load2_param, shoot_val.load2_val)
-        tspan = (xmax, xf)
-        prob = ODEProblem(f_vector, u0, tspan)
-        sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps, saveat = shoot_val.dx)
-        a = vcat(sol.u...)
-        res = deleteat!(a, 2:2:length(a))   # xmax...xfの結果を得る
-
-        return reverse(res), reverse(sol.t)
     end
 end

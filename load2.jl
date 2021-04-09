@@ -86,7 +86,7 @@ module Load2
         return (1.0 + (load2_param.K * x) ^ (3.0 / load2_param.LAMBDA)) ^ -load2_param.LAMBDA
     end
 
-    make_v2(x2, load2_param, load2_val) = let
+    make_vmax(x2, load2_param, load2_val) = let
         return x2 > load2_param.THRESHOLD ? dy0(x2, load2_param) : Interpolations.gradient(load2_val.yitp, x2)[1]
     end
 

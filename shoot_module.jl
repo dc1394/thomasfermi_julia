@@ -5,6 +5,7 @@ module Shoot_module
     mutable struct Shoot_module_variables
         dx::Float64
         eps::Float64
+        grid_num::Int64
         vmin::Float64
         vmax::Float64
         xmin::Float64

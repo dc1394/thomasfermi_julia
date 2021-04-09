@@ -13,29 +13,29 @@ module Iteration
     
         dx = data.xmax / float(data.grid_num)
 
-        shoot_val = Shoot.construct(dx, data.eps, data.xmax, data)
+        shoot_val = Shoot.construct(dx, data)
         xarray, yarray = Shoot.shootf(data.xmin, data.xmax, data.matching_point, shoot_val)
-        solve_tf_param, solve_tf_val = Solve_TF.construct(data, yarray)
-        return solve_tf_param, solve_tf_val, xarray, yarray
+        solve_tf_param, solve_tf_val = Solve_TF.construct(data, xarray, yarray)
+        return solve_tf_param, solve_tf_val, yarray
     end
 
-    function iteration(solve_tf_param, solve_tf_val, xarray, yarray)
-        #for i in 0:1000
-            newyarray = Solve_TF.solvepoisson!(0, solve_tf_param, solve_tf_val, xarray, yarray)
-            #@printf("NormRD = %.14f\n", NormRD(newyarray, yarray))
-            #yarray = newyarray
-        #end
-    end            
-
-    function NormRD(newarray, oldarray)
-        len = length(newarray)
-        @printf("%d %d\n", len, length(oldarray))
+    getNormRD(newarray, oldarray) = let
         tmp = newarray .- oldarray
-        normrd = 0.0
-        for i in 1:len
-            normrd += tmp[i] * tmp[i]
-        end
+        tmp .*= tmp
 
-        return normrd
+        return sqrt(sum(tmp))
     end
+
+    function iteration(solve_tf_param, solve_tf_val, yarray)
+        for i in 0:1000
+            newyarray = Solve_TF.solvetf!(i, solve_tf_param, solve_tf_val, yarray)
+            @printf("NormRD = %.14f\n", getNormRD(newyarray, yarray))
+            yarray = simple_mixing(newyarray, yarray)
+        end
+    end
+
+    simple_mixing(newarray, oldarray) = let
+        return 0.05 .* newarray .+ 0.95 .* oldarray
+    end
+
 end
