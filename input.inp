@@ -1,0 +1,24 @@
+#
+# Chemical Number
+#
+
+chemical.number             1
+
+#
+# Parameters for solving 1D-differential equations
+#
+
+grid.xmin                   1.0E-5          # default = 1.0E-5
+grid.xmax                   100.0           # default = 100.0
+grid.num                    5000          # default = 20000
+eps                         1.0E-15         # default = 1.0E-15
+matching.point              11.0            # default = 11.0
+gauss.legendre.integ        5               # default = 500
+
+#
+# Iteration
+#
+
+iteration.maxIter           10000           # default = 1000
+iteration.Mixing.Weight     0.08            # default = 0.08
+iteration.criterion         1.0E-13         # default = 1.0E-13
