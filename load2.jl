@@ -72,7 +72,7 @@ module Load2
             0.0011, 0.00079, 0.00063, 0.00049, 0.00039, 0.00032
         ]
 
-        load2_val.yitp = interpolate((load2_val.x,), y, Gridded(Constant()))
+        load2_val.yitp = interpolate((load2_val.x,), y, Gridded(Linear()))
         
         return load2_param, load2_val
     end
