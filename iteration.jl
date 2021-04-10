@@ -28,7 +28,7 @@ module Iteration
 
     function iteration(data, solve_tf_param, solve_tf_val, yarray)
         normrd = 1.0
-        for iter in 0:data.iteration_maxiter        
+        for iter in 0:data.iteration_maxiter - 1        
             newyarray = Solve_TF.solvetf!(iter, solve_tf_param, solve_tf_val, yarray)
             normrd = getNormRD(newyarray, yarray)
             if normrd <= data.iteration_criterion
