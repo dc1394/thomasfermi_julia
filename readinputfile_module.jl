@@ -3,7 +3,7 @@ module Readinputfile_module
     using .Data_module
 
     mutable struct Readinputfile_variables
-        data::Data_module.Data_param
+        data::Data_module.Data_val
         lines::Array{String, 1}
         lineindex::UInt64
     end

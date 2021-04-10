@@ -8,7 +8,6 @@ module Shoot
     using MKL
     using .Load2
     using .Shoot_module
-    using Printf
 
     const DELV = 1.0E-7
     const NVAR = 2
@@ -41,7 +40,7 @@ module Shoot
         return append!(xar, xarray), append!(yar, yarray)
     end
 
-    function funcx1(dfdv, f1, f_vector, shoot_val)
+    function funcx1!(dfdv, f1, f_vector, shoot_val)
         sav = shoot_val.vmin
         shoot_val.vmin += DELV
 
@@ -60,7 +59,7 @@ module Shoot
         shoot_val.vmin = sav
     end
 
-    function funcx2(dfdv, f2, f_vector, shoot_val)
+    function funcx2!(dfdv, f2, f_vector, shoot_val)
         sav = shoot_val.vmax
         shoot_val.vmax += DELV
 
@@ -88,7 +87,7 @@ module Shoot
         return y
     end
 
-    function shootf(xmin, xmax, xf, shoot_val) 
+    function shootf!(xmin, xmax, xf, shoot_val) 
         f_vector(u, p, t) = [u[2], u[1] * sqrt(u[1] / t)]
 
         # 最良の仮の値v1_でx1からxfまで解いていく
@@ -108,19 +107,24 @@ module Shoot
         dfdv = Matrix{Float64}(undef, NVAR, NVAR)
 
         # x1で用いる境界条件を変える
-        funcx1(dfdv, f1, f_vector, shoot_val)
+        fa = @async funcx1!(dfdv, f1, f_vector, shoot_val)
 
         # 次にx2で用いる境界条件を変える
-        funcx2(dfdv, f2, f_vector, shoot_val)
+        fb = @async funcx2!(dfdv, f2, f_vector, shoot_val)
 
+        wait(fa)
+        wait(fb)
+        
         f = f1 .- f2
         ff = -1.0 .* f
 
         solf = dfdv \ ff
         
-        shoot_val.vmin += solf[1]                 # x1の境界でのパラメータ値の増分
+        # x1の境界でのパラメータ値の増分
+        shoot_val.vmin += solf[1]
 
-        shoot_val.vmax += solf[2]                 # x2の境界でのパラメータ値の増分
+        # x2の境界でのパラメータ値の増分
+        shoot_val.vmax += solf[2]
 
         res1, xarray1 = solveode_xmintoxf(f_vector, shoot_val)
 

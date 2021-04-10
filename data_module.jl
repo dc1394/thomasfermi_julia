@@ -19,15 +19,14 @@ module Data_module
 
     const XMIN_DEFAULT = 1.0E-5
 
-    mutable struct Data_param
+    mutable struct Data_val
         eps::Union{Float64, Nothing}
-        gauss_legendre_integ::Union{Int32, Nothing}
+        gauss_legendre_integ_num::Union{Int32, Nothing}
         grid_num::Union{Int32, Nothing}
         matching_point::Union{Float64, Nothing}
         iteration_criterion::Union{Float64, Nothing}
         iteration_maxiter::Union{Int32, Nothing}
         iteration_mixing_weight::Union{Float64, Nothing}
-        usethread::Bool
         xmax::Union{Float64, Nothing}
         xmin::Union{Float64, Nothing}
         Z::Union{Float64, Nothing}

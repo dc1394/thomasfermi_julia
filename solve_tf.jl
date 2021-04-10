@@ -7,10 +7,11 @@ module Solve_TF
     using Interpolations
     using .GaussLegendre
     using .Solve_TF_module
-    using Printf
 
-    function construct(data, xarray, yarray)
-        solve_tf_param = Solve_TF_module.Solve_TF_param(data.grid_num, data.gauss_legendre_integ, data.grid_num + 1, data.xmax, data.xmin, yarray[1], yarray[end])
+    const BETA0 = 1000.0
+
+    function construct!(data, xarray, yarray)
+        solve_tf_param = Solve_TF_module.Solve_TF_param(data.grid_num, data.gauss_legendre_integ_num, data.grid_num + 1, data.xmax, data.xmin, yarray[1], yarray[end])
         solve_tf_val = Solve_TF_module.Solve_TF_variables(
             Array{Float64}(undef, solve_tf_param.ELE_TOTAL),
             Array{Float64}(undef, solve_tf_param.ELE_TOTAL, 2, 2),
@@ -35,10 +36,10 @@ module Solve_TF
             make_data!(solve_tf_param, solve_tf_val)
         end
 
-        make_element_matrix_and_vector(solve_tf_param, solve_tf_val, yarray)
+        make_element_matrix_and_vector!(solve_tf_param, solve_tf_val, yarray)
                 
         # 全体行列と全体ベクトルを生成
-        tmp_dv, tmp_ev = make_global_matrix_and_vector(solve_tf_param, solve_tf_val)
+        tmp_dv, tmp_ev = make_global_matrix_and_vector!(solve_tf_param, solve_tf_val)
 
         # 境界条件処理
         boundary_conditions!(solve_tf_val, solve_tf_param, tmp_dv, tmp_ev)
@@ -46,13 +47,6 @@ module Solve_TF
         # 連立方程式を解く
         solve_tf_val.ug = solve_tf_val.mat_A_glo \ solve_tf_val.vec_b_glo
 
-        # openしてブロック内で書き込み
-        open( "res.txt", "w" ) do fp
-            for i in 1:length(solve_tf_val.ug)
-                write( fp, @sprintf("%.14f %.14f\n", solve_tf_val.node_x_glo[i], solve_tf_val.ug[i]))
-            end
-        end
-        exit(0)
         return solve_tf_val.ug
     end
     
@@ -74,7 +68,7 @@ module Solve_TF
 
     make_beta(solve_tf_val, yarray) = let
         beta_array = Vector{Float64}(undef, length(solve_tf_val.node_x_glo))
-        beta_array[1] = 1000.0
+        beta_array[1] = BETA0
         for i in 2:length(solve_tf_val.node_x_glo)
             beta_array[i] = yarray[i] * sqrt(yarray[i] / solve_tf_val.node_x_glo[i])
         end
@@ -100,12 +94,12 @@ module Solve_TF
         end
     end
 
-    function make_element_matrix_and_vector(solve_tf_param, solve_tf_val, yarray)
+    function make_element_matrix_and_vector!(solve_tf_param, solve_tf_val, yarray)
         beta_array = make_beta(solve_tf_val, yarray)
         yitp = interpolate((solve_tf_val.node_x_glo,), beta_array, Gridded(Linear()))
 
         # 要素行列とLocal節点ベクトルの各成分を計算
-        for e = 1:solve_tf_param.ELE_TOTAL
+        Threads.@threads for e = 1:solve_tf_param.ELE_TOTAL
             for i = 1:2
                 for j = 1:2
                     solve_tf_val.mat_A_ele[e, i, j] = (-1) ^ i * (-1) ^ j / solve_tf_val.length[e]
@@ -113,15 +107,15 @@ module Solve_TF
 
                 solve_tf_val.vec_b_ele[e, i] =
                     @match i begin
-                        1 => GaussLegendre.gl_integ(x -> yitp(x) * (solve_tf_val.node_x_ele[e, 2] - x) / solve_tf_val.length[e],
-                                                     solve_tf_val.node_x_ele[e, 1],
-                                                     solve_tf_val.node_x_ele[e, 2],
-                                                     solve_tf_val)
+                        1 => GaussLegendre.gl_integ(x -> -yitp(x) * (solve_tf_val.node_x_ele[e, 2] - x) / solve_tf_val.length[e],
+                                                    solve_tf_val.node_x_ele[e, 1],
+                                                    solve_tf_val.node_x_ele[e, 2],
+                                                    solve_tf_val)
                         
-                        2 => GaussLegendre.gl_integ(x -> yitp(x) * (x - solve_tf_val.node_x_ele[e, 1]) / solve_tf_val.length[e],
-                                                     solve_tf_val.node_x_ele[e, 1],
-                                                     solve_tf_val.node_x_ele[e, 2],
-                                                     solve_tf_val)
+                        2 => GaussLegendre.gl_integ(x -> -yitp(x) * (x - solve_tf_val.node_x_ele[e, 1]) / solve_tf_val.length[e],
+                                                    solve_tf_val.node_x_ele[e, 1],
+                                                    solve_tf_val.node_x_ele[e, 2],
+                                                    solve_tf_val)
                     
                         _ => 0.0
                     end
@@ -129,7 +123,7 @@ module Solve_TF
         end
     end
 
-    function make_global_matrix_and_vector(solve_tf_param, solve_tf_val)
+    function make_global_matrix_and_vector!(solve_tf_param, solve_tf_val)
         tmp_dv = zeros(solve_tf_param.NODE_TOTAL)
         tmp_ev = zeros(solve_tf_param.NODE_TOTAL - 1)
 

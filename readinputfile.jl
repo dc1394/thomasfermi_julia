@@ -5,7 +5,7 @@ module Readinputfile
     using Printf
     using .Readinputfile_module
 
-    function construct(inputfilename, usethread)
+    function construct(inputfilename)
         lines = nothing
         try
             lines = readlines(inputfilename)
@@ -14,7 +14,7 @@ module Readinputfile
             exit(-1)
         end
 
-        data = Readinputfile_module.Data_module.Data_param(
+        data = Readinputfile_module.Data_module.Data_val(
             nothing,
             nothing,
             nothing,
@@ -22,7 +22,6 @@ module Readinputfile
             nothing,
             nothing,
             nothing,
-            usethread,
             nothing,
             nothing,
             nothing)
@@ -209,7 +208,7 @@ module Readinputfile
         rif_val.data.matching_point = readvalue!(Data_module.MATCHING_POINT_DEFAULT, rif_val, "matching.point")
 
         # 積分に使うGauss-Legendreの分点を読み込む
-        rif_val.data.gauss_legendre_integ  = readvalue!(Data_module.GAUSS_LEGENDRE_INTEG_DEFAULT, rif_val, "gauss.legendre.integ")
+        rif_val.data.gauss_legendre_integ_num  = readvalue!(Data_module.GAUSS_LEGENDRE_INTEG_DEFAULT, rif_val, "gauss.legendre.integ")
 
         # SCFの最大ループ回数を読み込む
         rif_val.data.iteration_maxiter = readvalue!(Data_module.ITERATION_MAXITER_DEFAULT, rif_val, "iteration.maxIter")
