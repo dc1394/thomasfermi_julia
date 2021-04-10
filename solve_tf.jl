@@ -51,7 +51,7 @@ module Solve_TF
     end
     
     function boundary_conditions!(solve_tf_val, solve_tf_param, tmp_dv, tmp_ev)
-        a = 1.0
+        a = solve_tf_param.Y0
         tmp_dv[1] = 1.0
         solve_tf_val.vec_b_glo[1] = a
         solve_tf_val.vec_b_glo[2] -= a * tmp_ev[1]

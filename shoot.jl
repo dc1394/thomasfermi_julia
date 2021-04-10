@@ -4,8 +4,6 @@ module Shoot
     include("readinputfile.jl")
     include("shoot_module.jl")
     using DifferentialEquations
-    using LinearAlgebra
-    using MKL
     using .Load2
     using .Shoot_module
 
@@ -162,7 +160,7 @@ module Shoot
         a = vcat(sol.u...)
         f = deleteat!(a, 2:2:length(a))
         
-        y = collect(load1(shoot_val.xmin, shoot_val.vmin))
+        y = load1(shoot_val.xmin, shoot_val.vmin)
         res = append!(y[1:1], f)
         tarray = append!(tarray, sol.t)
 
