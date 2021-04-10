@@ -15,7 +15,7 @@ module Iteration
 
         shoot_val = Shoot.construct(dx, data)
         xarray, yarray = Shoot.shootf!(data.xmin, data.xmax, data.matching_point, shoot_val)
-        solve_tf_param, solve_tf_val = Solve_TF.construct!(data, xarray, yarray)
+        solve_tf_param, solve_tf_val = Solve_TF.construct(data, xarray, yarray)
         return data, solve_tf_param, solve_tf_val, yarray
     end
 
