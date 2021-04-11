@@ -9,6 +9,6 @@ module Load2_module
 
     mutable struct Load2_module_variables
         x::Array{Float64}
-        yitp::Union{Interpolations.GriddedInterpolation{Float64, 1, Float64, Gridded{Constant{Nearest}}, Tuple{Vector{Float64}}}, Nothing}
+        yitp::Union{Interpolations.GriddedInterpolation{Float64, 1, Float64, Interpolations.Gridded{Interpolations.Linear}, Tuple{Vector{Float64}}}, Nothing}
     end
 end

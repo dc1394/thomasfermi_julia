@@ -1,7 +1,6 @@
 module Shoot
     include("load2.jl")
     include("load2_module.jl")
-    include("readinputfile.jl")
     include("shoot_module.jl")
     using DifferentialEquations
     using .Load2
@@ -9,7 +8,7 @@ module Shoot
 
     const DELV = 1.0E-7
     const NVAR = 2
-    const VMIN = -1.588076779
+    const VMIN = -1.588071022611375
 
     function construct(dx, data)
         load2_param, load2_val = Load2.construct()
@@ -28,10 +27,10 @@ module Shoot
         return shoot_val
     end
 
-    createresult(res1, res2, xarray1, xarray2, shoot_val) = let
+    createresult(xarray1, xarray2, yarray1, yarray2) = let
         xarray = append!(xarray1[2:end], xarray2[2:end])
-        res1[end] = (res1[end] + res2[1]) / 2.0
-        yarray = append!(res1[2:end], res2[2:end])
+        yarray1[end] = (yarray1[end] + yarray2[1]) / 2.0
+        yarray = append!(yarray1[2:end], yarray2[2:end])
 
         xar = [0.0]
         yar = [1.0]
@@ -85,7 +84,7 @@ module Shoot
         return y
     end
 
-    function shootf!(xmin, xmax, xf, shoot_val) 
+    function shootf!(shoot_val) 
         f_vector(u, p, t) = [u[2], u[1] * sqrt(u[1] / t)]
 
         # 最良の仮の値v1_でx1からxfまで解いていく
@@ -104,14 +103,16 @@ module Shoot
         
         dfdv = Matrix{Float64}(undef, NVAR, NVAR)
 
-        # x1で用いる境界条件を変える
-        fa = @async funcx1!(dfdv, f1, f_vector, shoot_val)
+        begin
+            # x1で用いる境界条件を変える
+            fa = Threads.@spawn funcx1!(dfdv, f1, f_vector, shoot_val)
 
-        # 次にx2で用いる境界条件を変える
-        fb = @async funcx2!(dfdv, f2, f_vector, shoot_val)
-
-        wait(fa)
-        wait(fb)
+            # 次にx2で用いる境界条件を変える
+            fb = Threads.@spawn funcx2!(dfdv, f2, f_vector, shoot_val)
+        
+            fetch(fa)
+            fetch(fb)
+        end
         
         f = f1 .- f2
         ff = -1.0 .* f
@@ -124,11 +125,22 @@ module Shoot
         # x2の境界でのパラメータ値の増分
         shoot_val.vmax += solf[2]
 
-        res1, xarray1 = solveode_xmintoxf(f_vector, shoot_val)
+        size1 = floor(Int, shoot_val.xf / shoot_val.dx) + 1
+        size2 = floor(Int, (shoot_val.xmax - shoot_val.xf) / shoot_val.dx) + 1
+        
+        xarray1 = Vector{Float64}(undef, size1)
+        yarray1 = Vector{Float64}(undef, size1)
+        xarray2 = Vector{Float64}(undef, size2)
+        yarray2 = Vector{Float64}(undef, size2)
 
-        res2, xarray2 = solveode_xmaxtoxf(f_vector, shoot_val)
+        begin
+            fa = Threads.@spawn solveode_xmintoxf(f_vector, shoot_val)
+            fb = Threads.@spawn solveode_xmaxtoxf(f_vector, shoot_val)
+            xarray1, yarray1 = fetch(fa)
+            xarray2, yarray2 = fetch(fb)
+        end
 
-        return createresult(res1, res2, xarray1, xarray2, shoot_val)
+        return createresult(xarray1, xarray2, yarray1, yarray2)
     end
 
     solveode_xmaxtoxf(f_vector, shoot_val) = let
@@ -138,9 +150,9 @@ module Shoot
         prob = ODEProblem(f_vector, u0, tspan)
         sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps, saveat = shoot_val.dx)
         a = vcat(sol.u...)
-        res = deleteat!(a, 2:2:length(a))   # shoot_val.xmax...xfの結果を得る
+        yarray = deleteat!(a, 2:2:length(a))   # shoot_val.xmax...xfの結果を得る
 
-        return reverse(res), reverse(sol.t)
+        return reverse(sol.t), reverse(yarray)
     end
 
     solveode_xmintoxf(f_vector, shoot_val) = let
@@ -161,9 +173,9 @@ module Shoot
         f = deleteat!(a, 2:2:length(a))
         
         y = load1(shoot_val.xmin, shoot_val.vmin)
-        res = append!(y[1:1], f)
+        yarray = append!(y[1:1], f)
         tarray = append!(tarray, sol.t)
 
-        return res, tarray
+        return tarray, yarray
     end
 end

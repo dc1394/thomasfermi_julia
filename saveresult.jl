@@ -3,22 +3,30 @@ module Saveresult
     using Printf
     using .Saveresult_module
 
+    const rho_csv_filename = "rho.csv"
+    const rhoTilde_csv_filename = "rhoTilde.csv"
+    const y_csv_filename = "y.csv"
+
     function saveresult(data, xarray, yarray)
         alpha = (128.0 / (9.0 * pi ^ 2) * data.Z) ^ (1.0 / 3.0)
-        b = 32.0 / (9.0 * pi ^ 3) * data.Z * data.Z
+
         sr_param = Saveresult_module.Saveresult_param(
             alpha,
-            b,
+            32.0 / (9.0 * pi ^ 3) * data.Z * data.Z,
             xarray[2] - xarray[1],
             get_s(xarray, yarray),
             collect(0.0:xarray[2] - xarray[1]:floor(xarray[end] / alpha)),
             xarray,
             yarray,
             data.Z)
+
         @printf(" Energy = %.15f (Hartree)\n", makeenergy(sr_param))
-        saverho("rho.csv", sr_param)
-        saverhoTilde("rhoTilde.csv", sr_param)
-        savey("y.csv", sr_param)
+
+        saverho(sr_param)
+        saverhoTilde(sr_param)
+        savey(sr_param)
+
+        @printf("電子密度を%sと%sに，y(x)を%sに書き込みました．\n", rho_csv_filename, rhoTilde_csv_filename, y_csv_filename)
     end
 
     exactrho(r, sr_param) = let
@@ -43,24 +51,24 @@ module Saveresult
         return sr_param.s * sr_param.b * (y(sr_param, r) / r) * sqrt(y(sr_param, r) / r)
     end
 
-    saverho(filename, sr_param) = let
-        open(filename, "w" ) do fp
+    saverho(sr_param) = let
+        open(rho_csv_filename, "w" ) do fp
             for r in sr_param.rarray
                 write(fp, @sprintf("%.15f, %.15f, %.15f\n", r, rho(sr_param.alpha * r, sr_param), exactrho(r, sr_param)))
             end
         end
     end
 
-    saverhoTilde(filename, sr_param) = let
-        open(filename, "w" ) do fp
+    saverhoTilde(sr_param) = let
+        open(rhoTilde_csv_filename, "w" ) do fp
             for r in sr_param.rarray
                 write(fp, @sprintf("%.15f, %.15f, %.15f\n", r, rhoTilde(sr_param.alpha * r, sr_param), exactrhoTilde(r, sr_param)))
             end
         end
     end
         
-    savey(filename, sr_param) = let
-        open(filename, "w" ) do fp
+    savey(sr_param) = let
+        open(y_csv_filename, "w" ) do fp
             for x in sr_param.xarray
                 write(fp, @sprintf("%.15f, %.15f\n", x, y(sr_param, x)))
             end
