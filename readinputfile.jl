@@ -5,7 +5,7 @@ module Readinputfile
     using Printf
     using .Readinputfile_module
 
-    function construct(inputfilename)
+    function construct(inputfilename, usethread)
         lines = nothing
         try
             lines = readlines(inputfilename)
@@ -15,6 +15,7 @@ module Readinputfile
         end
 
         data = Readinputfile_module.Data_module.Data_val(
+            usethread,
             nothing,
             nothing,
             nothing,

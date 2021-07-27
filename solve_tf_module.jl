@@ -5,6 +5,7 @@ module Solve_TF_module
         ELE_TOTAL::Int64
         INTEGTABLENUM::Int64
         NODE_TOTAL::Int64
+        USETHREAD::Bool
         X_MAX::Float64
         X_MIN::Float64
         Y0::Float64

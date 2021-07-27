@@ -11,7 +11,16 @@ module Solve_TF
     const BETA0 = 1000.0
 
     function construct(data, xarray, yarray)
-        solve_tf_param = Solve_TF_module.Solve_TF_param(data.grid_num, data.gauss_legendre_integ_num, data.grid_num + 1, data.xmax, data.xmin, yarray[1], yarray[end])
+        solve_tf_param = Solve_TF_module.Solve_TF_param(
+            data.grid_num,
+            data.gauss_legendre_integ_num,
+            data.grid_num + 1,
+            data.usethread,
+            data.xmax,
+            data.xmin,
+            yarray[1],
+            yarray[end])
+
         solve_tf_val = Solve_TF_module.Solve_TF_variables(
             Array{Float64}(undef, solve_tf_param.ELE_TOTAL),
             Array{Float64}(undef, solve_tf_param.ELE_TOTAL, 2, 2),
@@ -98,27 +107,54 @@ module Solve_TF
         beta_array = make_beta(solve_tf_val, yarray)
         yitp = interpolate((solve_tf_val.node_x_glo,), beta_array, Gridded(Linear()))
 
-        # 要素行列とLocal節点ベクトルの各成分を計算
-        Threads.@threads for e = 1:solve_tf_param.ELE_TOTAL
-            for i = 1:2
-                for j = 1:2
-                    solve_tf_val.mat_A_ele[e, i, j] = (-1) ^ i * (-1) ^ j / solve_tf_val.length[e]
-                end
 
-                solve_tf_val.vec_b_ele[e, i] =
-                    @match i begin
-                        1 => GaussLegendre.gl_integ(x -> -yitp(x) * (solve_tf_val.node_x_ele[e, 2] - x) / solve_tf_val.length[e],
-                                                    solve_tf_val.node_x_ele[e, 1],
-                                                    solve_tf_val.node_x_ele[e, 2],
-                                                    solve_tf_val)
-                        
-                        2 => GaussLegendre.gl_integ(x -> -yitp(x) * (x - solve_tf_val.node_x_ele[e, 1]) / solve_tf_val.length[e],
-                                                    solve_tf_val.node_x_ele[e, 1],
-                                                    solve_tf_val.node_x_ele[e, 2],
-                                                    solve_tf_val)
-                    
-                        _ => 0.0
+        if solve_tf_param.USETHREAD
+            # 要素行列とLocal節点ベクトルの各成分を計算
+            Threads.@threads for e = 1:solve_tf_param.ELE_TOTAL
+                for i = 1:2
+                    for j = 1:2
+                        solve_tf_val.mat_A_ele[e, i, j] = (-1) ^ i * (-1) ^ j / solve_tf_val.length[e]
                     end
+
+                    solve_tf_val.vec_b_ele[e, i] =
+                        @match i begin
+                            1 => GaussLegendre.gl_integ(x -> -yitp(x) * (solve_tf_val.node_x_ele[e, 2] - x) / solve_tf_val.length[e],
+                                                        solve_tf_val.node_x_ele[e, 1],
+                                                        solve_tf_val.node_x_ele[e, 2],
+                                                        solve_tf_val)
+                        
+                            2 => GaussLegendre.gl_integ(x -> -yitp(x) * (x - solve_tf_val.node_x_ele[e, 1]) / solve_tf_val.length[e],
+                                                        solve_tf_val.node_x_ele[e, 1],
+                                                        solve_tf_val.node_x_ele[e, 2],
+                                                        solve_tf_val)
+                    
+                            _ => 0.0
+                        end
+                end
+            end
+        else
+            # 要素行列とLocal節点ベクトルの各成分を計算
+            for e = 1:solve_tf_param.ELE_TOTAL
+                for i = 1:2
+                    for j = 1:2
+                        solve_tf_val.mat_A_ele[e, i, j] = (-1) ^ i * (-1) ^ j / solve_tf_val.length[e]
+                    end
+
+                    solve_tf_val.vec_b_ele[e, i] =
+                        @match i begin
+                            1 => GaussLegendre.gl_integ(x -> -yitp(x) * (solve_tf_val.node_x_ele[e, 2] - x) / solve_tf_val.length[e],
+                                                        solve_tf_val.node_x_ele[e, 1],
+                                                        solve_tf_val.node_x_ele[e, 2],
+                                                        solve_tf_val)
+                        
+                            2 => GaussLegendre.gl_integ(x -> -yitp(x) * (x - solve_tf_val.node_x_ele[e, 1]) / solve_tf_val.length[e],
+                                                        solve_tf_val.node_x_ele[e, 1],
+                                                        solve_tf_val.node_x_ele[e, 2],
+                                                        solve_tf_val)
+                    
+                            _ => 0.0
+                        end
+                end
             end
         end
     end

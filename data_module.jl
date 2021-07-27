@@ -20,6 +20,7 @@ module Data_module
     const XMIN_DEFAULT = 1.0E-5
 
     mutable struct Data_val
+        usethread::Bool
         eps::Union{Float64, Nothing}
         gauss_legendre_integ_num::Union{Int32, Nothing}
         grid_num::Union{Int32, Nothing}

@@ -16,6 +16,7 @@ module Shoot
             dx,
             data.eps,
             data.grid_num,
+            data.usethread,
             VMIN,
             Load2.make_vmax(data.xmax, load2_param, load2_val),
             data.xmin,
@@ -103,7 +104,7 @@ module Shoot
         
         dfdv = Matrix{Float64}(undef, NVAR, NVAR)
 
-        begin
+        if shoot_val.usethread
             # x1で用いる境界条件を変える
             fa = Threads.@spawn funcx1!(dfdv, f1, f_vector, shoot_val)
 
@@ -112,6 +113,12 @@ module Shoot
         
             fetch(fa)
             fetch(fb)
+        else
+            # x1で用いる境界条件を変える
+            funcx1!(dfdv, f1, f_vector, shoot_val)
+
+            # 次にx2で用いる境界条件を変える
+            funcx2!(dfdv, f2, f_vector, shoot_val)
         end
         
         f = f1 .- f2
@@ -133,11 +140,14 @@ module Shoot
         xarray2 = Vector{Float64}(undef, size2)
         yarray2 = Vector{Float64}(undef, size2)
 
-        begin
+        if shoot_val.usethread
             fa = Threads.@spawn solveode_xmintoxf(f_vector, shoot_val)
             fb = Threads.@spawn solveode_xmaxtoxf(f_vector, shoot_val)
             xarray1, yarray1 = fetch(fa)
             xarray2, yarray2 = fetch(fb)
+        else
+            xarray1, yarray1 = solveode_xmintoxf(f_vector, shoot_val)
+            xarray2, yarray2 = solveode_xmaxtoxf(f_vector, shoot_val)
         end
 
         return createresult(xarray1, xarray2, yarray1, yarray2)

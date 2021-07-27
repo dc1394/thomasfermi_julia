@@ -8,7 +8,7 @@ module Iteration
     using .Solve_TF
 
     function construct(opt)
-        rif_val = Readinputfile.construct(opt.inpname)
+        rif_val = Readinputfile.construct(opt.inpname, opt.usethread)
         data = Readinputfile.readfile(rif_val)
     
         dx = data.xmax / float(data.grid_num)
