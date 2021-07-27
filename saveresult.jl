@@ -38,9 +38,9 @@ module Saveresult
     end
 
     makeenergy(sr_param) = let        
-        y_prime_1 = (sr_param.yarray[2] - sr_param.yarray[1]) / (sr_param.xarray[2] - sr_param.xarray[1])
-       
-        return 3.0 / 7.0 * sr_param.alpha * sr_param.Z ^ (7.0 / 3.0) * y_prime_1
+        y0_prime = (sr_param.yarray[2] - sr_param.yarray[1]) / (sr_param.xarray[2] - sr_param.xarray[1])
+        
+        return 3.0 / 7.0 * sr_param.alpha * sr_param.Z ^ (7.0 / 3.0) * y0_prime
     end
 
     rho(r, sr_param) = let

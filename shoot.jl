@@ -44,7 +44,7 @@ module Shoot
         u0 = load1(shoot_val.xmin, shoot_val.vmin)
         tspan = (shoot_val.xmin, shoot_val.xf)
         prob = ODEProblem(f_vector, u0, tspan)
-        sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps)
+        sol = solve(prob, VCABM(), abstol = shoot_val.eps, reltol = shoot_val.eps)
         f = sol.u[end]
         
         # NVAR個の合致条件にある偏微分を数値的に計算
@@ -63,7 +63,7 @@ module Shoot
         u0 = Load2.load2(shoot_val.xmax, shoot_val.vmax, shoot_val.load2_param, shoot_val.load2_val)
         tspan = (shoot_val.xmax, shoot_val.xf)
         prob = ODEProblem(f_vector, u0, tspan)
-        sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps)
+        sol = solve(prob, VCABM(), abstol = shoot_val.eps, reltol = shoot_val.eps)
         f = sol.u[end]
         
         for i in 1:NVAR
@@ -91,14 +91,14 @@ module Shoot
         u0 = load1(shoot_val.xmin, shoot_val.vmin)
         tspan = (shoot_val.xmin, shoot_val.xf)
         prob = ODEProblem(f_vector, u0, tspan)
-        sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps)
+        sol = solve(prob, VCABM(), abstol = shoot_val.eps, reltol = shoot_val.eps)
         f1 = sol.u[end]
         
         # 最良の仮の値v2_でx2からxfまで解いていく
         u0 = Load2.load2(shoot_val.xmax, shoot_val.vmax, shoot_val.load2_param, shoot_val.load2_val)
         tspan = (shoot_val.xmax, shoot_val.xf)
         prob = ODEProblem(f_vector, u0, tspan)
-        sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps)
+        sol = solve(prob, VCABM(), abstol = shoot_val.eps, reltol = shoot_val.eps)
         f2 = sol.u[end]
         
         dfdv = Matrix{Float64}(undef, NVAR, NVAR)
@@ -148,7 +148,7 @@ module Shoot
         u0 = Load2.load2(shoot_val.xmax, shoot_val.vmax, shoot_val.load2_param, shoot_val.load2_val)
         tspan = (shoot_val.xmax, shoot_val.xf)
         prob = ODEProblem(f_vector, u0, tspan)
-        sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps, saveat = shoot_val.dx)
+        sol = solve(prob, VCABM(), abstol = shoot_val.eps, reltol = shoot_val.eps, saveat = shoot_val.dx)
         a = vcat(sol.u...)
         yarray = deleteat!(a, 2:2:length(a))   # shoot_val.xmax...xfの結果を得る
 
@@ -160,7 +160,7 @@ module Shoot
         u0 = load1(shoot_val.xmin, shoot_val.vmin)
         tspan = (shoot_val.xmin, shoot_val.dx)
         prob = ODEProblem(f_vector, u0, tspan)
-        sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps)
+        sol = solve(prob, VCABM(), abstol = shoot_val.eps, reltol = shoot_val.eps)
         y = sol.u[end]
         tarray = sol.t[1:1]
 
@@ -168,7 +168,7 @@ module Shoot
         u0 = y
         tspan = (shoot_val.dx, shoot_val.xf)
         prob = ODEProblem(f_vector, u0, tspan)
-        sol = solve(prob, abstol = shoot_val.eps, reltol = shoot_val.eps, saveat = shoot_val.dx)
+        sol = solve(prob, VCABM(), abstol = shoot_val.eps, reltol = shoot_val.eps, saveat = shoot_val.dx)
         a = vcat(sol.u...)
         f = deleteat!(a, 2:2:length(a))
         
