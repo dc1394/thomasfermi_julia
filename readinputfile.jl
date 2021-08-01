@@ -206,7 +206,7 @@ module Readinputfile
         rif_val.data.eps = readvalue!(Data_module.EPS_DEFAULT, rif_val, "eps")
  
         # マッチングポイントを読み込む
-        rif_val.data.matching_point = readvalue!(Data_module.MATCHING_POINT_DEFAULT, rif_val, "matching.point")
+        rif_val.data.x_matching_point = readvalue!(Data_module.X_MATCHING_POINT_DEFAULT, rif_val, "x.matching.point")
 
         # 積分に使うGauss-Legendreの分点を読み込む
         rif_val.data.gauss_legendre_integ_num  = readvalue!(Data_module.GAUSS_LEGENDRE_INTEG_DEFAULT, rif_val, "gauss.legendre.integ")

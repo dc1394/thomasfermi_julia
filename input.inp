@@ -12,7 +12,7 @@ grid.xmin                   1.0E-5          # default = 1.0E-5
 grid.xmax                   100.0           # default = 100.0
 grid.num                    100000          # default = 20000
 eps                         1.0E-15         # default = 1.0E-15
-matching.point              11.0            # default = 11.0
+x.matching.point            11.0            # default = 11.0
 gauss.legendre.integ        500             # default = 500
 
 #

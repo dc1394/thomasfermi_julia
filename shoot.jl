@@ -20,7 +20,7 @@ module Shoot
             VMIN,
             Load2.make_vmax(data.xmax, load2_param, load2_val),
             data.xmin,
-            data.matching_point,
+            data.x_matching_point,
             data.xmax,
             Shoot_module.Load2_module.Load2_module_param(load2_param.LAMBDA, load2_param.THRESHOLD, load2_param.K),
             Shoot_module.Load2_module.Load2_module_variables(load2_val.x, load2_val.yitp))
