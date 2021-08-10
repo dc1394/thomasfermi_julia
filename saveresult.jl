@@ -40,6 +40,8 @@ module Saveresult
     makeenergy(sr_param) = let        
         y0_prime = (sr_param.yarray[2] - sr_param.yarray[1]) / (sr_param.xarray[2] - sr_param.xarray[1])
         
+        @printf(" y'(0) = %.14f\n", y0_prime)
+
         return 3.0 / 7.0 * sr_param.alpha * sr_param.Z ^ (7.0 / 3.0) * y0_prime
     end
 

@@ -3,7 +3,7 @@ module Data_module
 
     const EPS_DEFAULT = 1.0E-15
 
-    const GAUSS_LEGENDRE_INTEG_DEFAULT = 500
+    const GAUSS_LEGENDRE_INTEG_DEFAULT = 5
 
     const GRID_NUM_DEFAULT = 20000
     

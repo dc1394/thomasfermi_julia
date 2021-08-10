@@ -41,7 +41,7 @@ module Iteration
         end
 
         if convergence_flag
-            @printf("計算が収束しました．")
+            @printf("計算が収束しました．\n")
         else
             @printf("計算が収束しませんでした．プログラムを終了します．\n")
             exit(1)

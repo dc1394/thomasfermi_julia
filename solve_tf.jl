@@ -4,11 +4,30 @@ module Solve_TF
     using LinearAlgebra
     using Match
     using MKL
-    using Interpolations
     using .GaussLegendre
     using .Solve_TF_module
 
     const BETA0 = 1000.0
+
+    beta(x, xarray, beta_array) = let
+        klo = 1
+        max = length(xarray)
+        khi = max
+
+        # 表の中の正しい位置を二分探索で求める
+        @inbounds while khi - klo > 1
+            k = (khi + klo) >> 1
+
+            if xarray[k] > x
+                khi = k        
+            else 
+                klo = k
+            end
+        end
+
+        # yvec_[i] = f(xvec_[i]), yvec_[i + 1] = f(xvec_[i + 1])の二点を通る直線を代入
+        return (beta_array[khi] - beta_array[klo]) / (xarray[khi] - xarray[klo]) * (x - xarray[klo]) + beta_array[klo]
+    end
 
     function construct(data, xarray, yarray)
         solve_tf_param = Solve_TF_module.Solve_TF_param(
@@ -105,9 +124,7 @@ module Solve_TF
 
     function make_element_matrix_and_vector!(solve_tf_param, solve_tf_val, yarray)
         beta_array = make_beta(solve_tf_val, yarray)
-        yitp = interpolate((solve_tf_val.node_x_glo,), beta_array, Gridded(Linear()))
-
-
+        
         if solve_tf_param.USETHREAD
             # 要素行列とLocal節点ベクトルの各成分を計算
             Threads.@threads for e = 1:solve_tf_param.ELE_TOTAL
@@ -118,12 +135,12 @@ module Solve_TF
 
                     solve_tf_val.vec_b_ele[e, i] =
                         @match i begin
-                            1 => GaussLegendre.gl_integ(x -> -yitp(x) * (solve_tf_val.node_x_ele[e, 2] - x) / solve_tf_val.length[e],
+                            1 => GaussLegendre.gl_integ(x -> -beta(x, solve_tf_val.node_x_glo, beta_array) * (solve_tf_val.node_x_ele[e, 2] - x) / solve_tf_val.length[e],
                                                         solve_tf_val.node_x_ele[e, 1],
                                                         solve_tf_val.node_x_ele[e, 2],
                                                         solve_tf_val)
                         
-                            2 => GaussLegendre.gl_integ(x -> -yitp(x) * (x - solve_tf_val.node_x_ele[e, 1]) / solve_tf_val.length[e],
+                            2 => GaussLegendre.gl_integ(x -> -beta(x, solve_tf_val.node_x_glo, beta_array) * (x - solve_tf_val.node_x_ele[e, 1]) / solve_tf_val.length[e],
                                                         solve_tf_val.node_x_ele[e, 1],
                                                         solve_tf_val.node_x_ele[e, 2],
                                                         solve_tf_val)
@@ -142,12 +159,12 @@ module Solve_TF
 
                     solve_tf_val.vec_b_ele[e, i] =
                         @match i begin
-                            1 => GaussLegendre.gl_integ(x -> -yitp(x) * (solve_tf_val.node_x_ele[e, 2] - x) / solve_tf_val.length[e],
+                            1 => GaussLegendre.gl_integ(x -> -beta(x, solve_tf_val.node_x_glo, beta_array) * (solve_tf_val.node_x_ele[e, 2] - x) / solve_tf_val.length[e],
                                                         solve_tf_val.node_x_ele[e, 1],
                                                         solve_tf_val.node_x_ele[e, 2],
                                                         solve_tf_val)
                         
-                            2 => GaussLegendre.gl_integ(x -> -yitp(x) * (x - solve_tf_val.node_x_ele[e, 1]) / solve_tf_val.length[e],
+                            2 => GaussLegendre.gl_integ(x -> -beta(x, solve_tf_val.node_x_glo, beta_array) * (x - solve_tf_val.node_x_ele[e, 1]) / solve_tf_val.length[e],
                                                         solve_tf_val.node_x_ele[e, 1],
                                                         solve_tf_val.node_x_ele[e, 2],
                                                         solve_tf_val)
