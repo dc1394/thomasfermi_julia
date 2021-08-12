@@ -3,7 +3,7 @@ module Data_module
 
     const EPS_DEFAULT = 1.0E-15
 
-    const GAUSS_LEGENDRE_INTEG_DEFAULT = 5
+    const GAUSS_LEGENDRE_INTEG_DEFAULT = 2
 
     const GRID_NUM_DEFAULT = 20000
     
@@ -11,7 +11,7 @@ module Data_module
 
     const ITERATION_MAXITER_DEFAULT = 1000
 
-    const ITERATION_MIXING_WEIGHT_DEFAULT = 0.08
+    const ITERATION_MIXING_WEIGHT_DEFAULT = 0.1
 
     const XMAX_DEFAULT = 100.0
 

@@ -28,7 +28,7 @@ module Iteration
         convergence_flag = false
         
         for iter in 0:data.iteration_maxiter - 1
-            newyarray = Solve_TF.solvetf!(iter, solve_tf_param, solve_tf_val, yarray)
+            newyarray = Solve_TF.solvetf!(solve_tf_param, solve_tf_val, yarray)
             normrd = getNormRD(newyarray, yarray, solve_tf_val.node_x_glo)
             
             @printf("Iteration # %d: NormRD = %.15f\n", iter + 1, normrd)

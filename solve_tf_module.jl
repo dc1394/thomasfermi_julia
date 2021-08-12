@@ -14,11 +14,11 @@ module Solve_TF_module
 
     mutable struct Solve_TF_variables
         length::Array{Float64, 1}
-        mat_A_ele::Array{Float64, 3}
         mat_A_glo::SymTridiagonal{Float64,Array{Float64,1}}
         node_num_seg::Array{Int64, 2}
         node_x_ele::Array{Float64, 2}
         node_x_glo::Array{Float64, 1}
+        tmp::Array{Float64, 1}
         ug::Array{Float64, 1}
         vec_b_ele::Array{Float64, 2}
         vec_b_glo::Array{Float64, 1}
