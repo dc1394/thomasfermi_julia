@@ -7,6 +7,19 @@ module Saveresult
     const rhoTilde_csv_filename = "rhoTilde.csv"
     const y_csv_filename = "y.csv"
 
+    function asymptotic(x)
+        LAMBDA = 3.886
+        K = 0.190785707092222
+        
+        return (1.0 + (K * x) ^ (3.0 / LAMBDA)) ^ -LAMBDA
+    end
+
+    function expansion(x)
+        B = -1.588071022611375
+        
+        return (((1.0 / 3.0 * x + 0.4 * B * sqrt(x)) * x) + 4.0 / 3.0 * sqrt(x) + B) * x + 1.0 
+    end
+
     function saveresult(data, xarray, yarray)
         alpha = (128.0 / (9.0 * pi ^ 2) * data.Z) ^ (1.0 / 3.0)
 
@@ -71,8 +84,9 @@ module Saveresult
         
     savey(sr_param) = let
         open(y_csv_filename, "w" ) do fp
+
             for x in sr_param.xarray
-                write(fp, @sprintf("%.15f, %.15f\n", x, y(sr_param, x)))
+                write(fp, @sprintf("%.15f, %.15f, %.15f, %.15f\n", x, y(sr_param, x), expansion(x), asymptotic(x)))
             end
         end
     end
