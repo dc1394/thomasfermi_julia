@@ -29,6 +29,16 @@ module Solve_TF
         return (beta_array[khi] - beta_array[klo]) / (xarray[khi] - xarray[klo]) * (x - xarray[klo]) + beta_array[klo]
     end
 
+    function boundary_conditions!(solve_tf_val, solve_tf_param)
+        a = solve_tf_param.Y0
+        solve_tf_val.vec_b_glo[1] = a
+        solve_tf_val.vec_b_glo[2] -= a * solve_tf_val.tmp[1]
+        
+        b = solve_tf_param.YMAX
+        solve_tf_val.vec_b_glo[solve_tf_param.NODE_TOTAL] = b
+        solve_tf_val.vec_b_glo[solve_tf_param.NODE_TOTAL - 1] -= b * solve_tf_val.tmp[2]
+    end
+
     function construct(data, xarray, yarray)
         solve_tf_param = Solve_TF_module.Solve_TF_param(
             data.grid_num,
@@ -60,33 +70,7 @@ module Solve_TF
 
         return solve_tf_param, solve_tf_val
     end
-
-    function solvetf!(solve_tf_param, solve_tf_val, yarray)
-        # Local節点ベクトルを生成
-        make_element_vector!(solve_tf_param, solve_tf_val, yarray)
-                
-        # 全体ベクトルを生成
-        make_global_vector!(solve_tf_param, solve_tf_val)
-
-        # 境界条件処理
-        boundary_conditions!(solve_tf_val, solve_tf_param)
-
-        # 連立方程式を解く
-        solve_tf_val.ug = solve_tf_val.mat_A_glo \ solve_tf_val.vec_b_glo
-
-        return solve_tf_val.ug
-    end
     
-    function boundary_conditions!(solve_tf_val, solve_tf_param)
-        a = solve_tf_param.Y0
-        solve_tf_val.vec_b_glo[1] = a
-        solve_tf_val.vec_b_glo[2] -= a * solve_tf_val.tmp[1]
-        
-        b = solve_tf_param.YMAX
-        solve_tf_val.vec_b_glo[solve_tf_param.NODE_TOTAL] = b
-        solve_tf_val.vec_b_glo[solve_tf_param.NODE_TOTAL - 1] -= b * solve_tf_val.tmp[2]
-    end
-
     make_beta(solve_tf_val, yarray) = let
         beta_array = Vector{Float64}(undef, length(solve_tf_val.node_x_glo))
         beta_array[1] = BETA0
@@ -212,5 +196,21 @@ module Solve_TF
                 solve_tf_val.vec_b_glo[solve_tf_val.node_num_seg[e, i]] += solve_tf_val.vec_b_ele[e, i]
             end
         end
-    end          
+    end
+    
+    function solvetf!(solve_tf_param, solve_tf_val, yarray)
+        # Local節点ベクトルを生成
+        make_element_vector!(solve_tf_param, solve_tf_val, yarray)
+                
+        # 全体ベクトルを生成
+        make_global_vector!(solve_tf_param, solve_tf_val)
+
+        # 境界条件処理
+        boundary_conditions!(solve_tf_val, solve_tf_param)
+
+        # 連立方程式を解く
+        solve_tf_val.ug = solve_tf_val.mat_A_glo \ solve_tf_val.vec_b_glo
+
+        return solve_tf_val.ug
+    end
 end

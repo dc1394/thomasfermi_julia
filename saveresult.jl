@@ -7,14 +7,14 @@ module Saveresult
     const rhoTilde_csv_filename = "rhoTilde.csv"
     const y_csv_filename = "y.csv"
 
-    function asymptotic(x)
+    asymptotic(x) = let 
         LAMBDA = 3.886
         K = 0.190785707092222
         
         return (1.0 + (K * x) ^ (3.0 / LAMBDA)) ^ -LAMBDA
     end
 
-    function expansion(x)
+    expansion(x) = let
         B = -1.588071022611375
         
         return (((1.0 / 3.0 * x + 0.4 * B * sqrt(x)) * x) + 4.0 / 3.0 * sqrt(x) + B) * x + 1.0 

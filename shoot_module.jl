@@ -7,7 +7,7 @@ module Shoot_module
         eps::Float64
         grid_num::Int64
         usethread::Bool
-        vmin::Float64
+        v0::Float64
         vmax::Float64
         xmin::Float64
         xf::Float64

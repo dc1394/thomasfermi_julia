@@ -8,7 +8,7 @@ module Shoot
 
     const DELV = 1.0E-7
     const NVAR = 2
-    const VMIN = -1.588071022611375
+    const V0 = -1.588071022611375
 
     function construct(dx, data)
         load2_param, load2_val = Load2.construct()
@@ -17,7 +17,7 @@ module Shoot
             data.eps,
             data.grid_num,
             data.usethread,
-            VMIN,
+            V0,
             Load2.make_vmax(data.xmax, load2_param, load2_val),
             data.xmin,
             data.x_matching_point,
@@ -39,10 +39,10 @@ module Shoot
     end
 
     function funcx1!(dfdv, f1, f_vector, shoot_val)
-        sav = shoot_val.vmin
-        shoot_val.vmin += DELV
+        sav = shoot_val.v0
+        shoot_val.v0 += DELV
 
-        u0 = load1(shoot_val.xmin, shoot_val.vmin)
+        u0 = load1(shoot_val.xmin, shoot_val.v0)
         tspan = (shoot_val.xmin, shoot_val.xf)
         prob = ODEProblem(f_vector, u0, tspan)
         sol = solve(prob, VCABM(), abstol = shoot_val.eps, reltol = shoot_val.eps)
@@ -54,7 +54,7 @@ module Shoot
         end
 
         # 境界におけるパラメータを格納
-        shoot_val.vmin = sav
+        shoot_val.v0 = sav
     end
 
     function funcx2!(dfdv, f2, f_vector, shoot_val)
@@ -74,13 +74,13 @@ module Shoot
         shoot_val.vmax = sav
     end
 
-    load1(xmin, vmin) = let
+    load1(xmin, v0) = let
         y = Vector{Float64}(undef, 2)
 
-        # y[1] = 1.0 + vmin[0] * xmin + 4.0 / 3.0 * xmin * sqrt(xmin) + 0.4 * vmin[0] * xmin * xmin * sqrt(xmin) + 1.0 / 3.0 * xmin * xmin * xmin
-        y[1] = (((1.0 / 3.0 * xmin + 0.4 * vmin * sqrt(xmin)) * xmin) + 4.0 / 3.0 * sqrt(xmin) + vmin) * xmin + 1.0
-        # y[2] = vmin[0] + 2.0 * sqrt(xmin) + vmin[0] * xmin * sqrt(xmin) + xmin * xmin + 0.15 * vmin[0] * xmin * xmin * sqrt(xmin)
-        y[2] = ((0.15 * vmin * sqrt(xmin) + 1.0) * xmin + vmin * sqrt(xmin)) * xmin + 2.0 * sqrt(xmin) + vmin
+        # y[1] = 1.0 + v0[0] * xmin + 4.0 / 3.0 * xmin * sqrt(xmin) + 0.4 * v0[0] * xmin * xmin * sqrt(xmin) + 1.0 / 3.0 * xmin * xmin * xmin
+        y[1] = (((1.0 / 3.0 * xmin + 0.4 * v0 * sqrt(xmin)) * xmin) + 4.0 / 3.0 * sqrt(xmin) + v0) * xmin + 1.0
+        # y[2] = v0[0] + 2.0 * sqrt(xmin) + v0[0] * xmin * sqrt(xmin) + xmin * xmin + 0.15 * v0[0] * xmin * xmin * sqrt(xmin)
+        y[2] = ((0.15 * v0 * sqrt(xmin) + 1.0) * xmin + v0 * sqrt(xmin)) * xmin + 2.0 * sqrt(xmin) + v0
 
         return y
     end
@@ -89,7 +89,7 @@ module Shoot
         f_vector(u, p, t) = [u[2], u[1] * sqrt(u[1] / t)]
 
         # 最良の仮の値v1_でx1からxfまで解いていく
-        u0 = load1(shoot_val.xmin, shoot_val.vmin)
+        u0 = load1(shoot_val.xmin, shoot_val.v0)
         tspan = (shoot_val.xmin, shoot_val.xf)
         prob = ODEProblem(f_vector, u0, tspan)
         sol = solve(prob, VCABM(), abstol = shoot_val.eps, reltol = shoot_val.eps)
@@ -127,7 +127,7 @@ module Shoot
         solf = dfdv \ ff
         
         # x1の境界でのパラメータ値の増分
-        shoot_val.vmin += solf[1]
+        shoot_val.v0 += solf[1]
 
         # x2の境界でのパラメータ値の増分
         shoot_val.vmax += solf[2]
@@ -167,7 +167,7 @@ module Shoot
 
     solveode_xmintoxf(f_vector, shoot_val) = let
         # 得られた条件でx1...dxまで微分方程式を解く
-        u0 = load1(shoot_val.xmin, shoot_val.vmin)
+        u0 = load1(shoot_val.xmin, shoot_val.v0)
         tspan = (shoot_val.xmin, shoot_val.dx)
         prob = ODEProblem(f_vector, u0, tspan)
         sol = solve(prob, VCABM(), abstol = shoot_val.eps, reltol = shoot_val.eps)
@@ -182,7 +182,7 @@ module Shoot
         a = vcat(sol.u...)
         f = deleteat!(a, 2:2:length(a))
         
-        y = load1(shoot_val.xmin, shoot_val.vmin)
+        y = load1(shoot_val.xmin, shoot_val.v0)
         yarray = append!(y[1:1], f)
         tarray = append!(tarray, sol.t)
 
